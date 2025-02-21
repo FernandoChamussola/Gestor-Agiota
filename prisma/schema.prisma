@@ -1,0 +1,78 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Usuario {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  email           String           @unique
+  senha           String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  capitalTotal    Float            @default(0)
+  movimentacoes   Movimentacao[]
+  dividas         Divida[]
+}
+
+model Movimentacao {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  tipo        TipoMov
+  valor       Float
+  data        DateTime  @default(now())
+  descricao   String?
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  usuarioId   String    @db.ObjectId
+}
+
+model Divida {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  devedor         Devedor         @relation(fields: [devedorId], references: [id])
+  devedorId       String          @db.ObjectId
+  valorInicial    Float
+  taxaJuros      Float           // Armazenado como decimal (ex: 25.0 para 25%)
+  dataEmprestimo  DateTime        @default(now())
+  dataVencimento  DateTime
+  status          StatusDivida    @default(ATIVA)
+  observacoes     String?
+  pagamentos      Pagamento[]
+  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
+  usuarioId       String          @db.ObjectId
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Devedor {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome        String
+  telefone    String
+  endereco    String
+  dividas     Divida[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Pagamento {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  valor       Float
+  data        DateTime  @default(now())
+  divida      Divida    @relation(fields: [dividaId], references: [id])
+  dividaId    String    @db.ObjectId
+  createdAt   DateTime  @default(now())
+}
+
+enum TipoMov {
+  DEPOSITO
+  RETIRADA
+}
+
+enum StatusDivida {
+  ATIVA
+  ATRASADA
+  QUITADA
+}
