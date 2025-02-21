@@ -400,6 +400,63 @@ app.get('/api/relatorios/devedores/pdf', authMiddleware, async (req, res) => {
   }
 });
 
+
+// Rota para contar quantos usuários existem no sistema
+app.get('/usuarios/count', async (req, res) => {
+    try {
+      const count = await prisma.usuario.count();
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro ao contar usuários' });
+    }
+  });
+  
+  // Rota para ver quantas dívidas cada usuário tem cadastradas
+  app.get('/usuarios/dividas', async (req, res) => {
+    try {
+      const usuarios = await prisma.usuario.findMany({
+        include: {
+          dividas: true, // Inclui as dívidas de cada usuário
+        },
+      });
+  
+      const result = usuarios.map(usuario => ({
+        id: usuario.id,
+        nome: usuario.nome,
+        dividasCount: usuario.dividas.length,
+      }));
+  
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: 'Erro ao buscar dívidas dos usuários' });
+    }
+  });
+  
+  // Rota para apagar todas as dívidas quitadas
+  // Rota para apagar todas as dívidas quitadas
+app.delete('/dividas/quitadas', async (req, res) => {
+    try {
+      // Primeiro, exclua os pagamentos associados às dívidas quitadas
+      await prisma.pagamento.deleteMany({
+        where: {
+          divida: {
+            status: 'QUITADA',
+          },
+        },
+      });
+  
+      // Agora, exclua as dívidas quitadas
+      const deletedDividas = await prisma.divida.deleteMany({
+        where: {
+          status: 'QUITADA',
+        },
+      });
+  
+      res.json({ message: 'Dívidas quitadas e seus pagamentos apagados com sucesso', deletedCount: deletedDividas.count });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro ao apagar dívidas quitadas' });
+    }
+  });
 // Middleware de Erro Global
 app.use((err, req, res, next) => {
   console.error(err.stack);
