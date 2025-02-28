@@ -457,6 +457,21 @@ app.delete('/dividas/quitadas', async (req, res) => {
       res.status(500).json({ error: 'Erro ao apagar dívidas quitadas' });
     }
   });
+
+  app.post('/api/usuarios/atualizar/capital') , async (req, res) => {
+    const { userId,  capitalTotal } = req.body;
+    try {
+      const usuario = await prisma.usuario.update({
+        where: { id : userId },
+        data: { capitalTotal:  capitalTotal }, // Atualiza o capital total do usuário
+      });
+      res.json({ message: "Capital atualizado com sucesso" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Erro ao atualizar capital" });
+      
+    }
+  }
 // Middleware de Erro Global
 app.use((err, req, res, next) => {
   console.error(err.stack);
