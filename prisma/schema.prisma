@@ -76,3 +76,11 @@ enum StatusDivida {
   ATRASADA
   QUITADA
 }
+
+model Mensagem {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome        String
+  email       String
+  mensagem    String
+  createdAt   DateTime  @default(now())
+}

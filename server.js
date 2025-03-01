@@ -115,7 +115,7 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    return res.json({ token });
+    return res.json({ token, id: usuario.id });
   } catch (error) {
     console.log(error)
     return res.status(500).json({ error: 'Erro ao fazer login' });
@@ -458,20 +458,38 @@ app.delete('/dividas/quitadas', async (req, res) => {
     }
   });
 
-  app.post('/api/usuarios/atualizar/capital') , async (req, res) => {
-    const { userId,  capitalTotal } = req.body;
+  app.post('/api/usuarios/atualizar/capital', async (req, res) => {
+    const { userId, capitalTotal } = req.body;
     try {
       const usuario = await prisma.usuario.update({
-        where: { id : userId },
-        data: { capitalTotal:  capitalTotal }, // Atualiza o capital total do usuário
+        where: { id: userId },
+        data: { capitalTotal: parseFloat(capitalTotal) }, // Atualiza o capital total do usuário
       });
+      console.log(usuario.capitalTotal)
       res.json({ message: "Capital atualizado com sucesso" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Erro ao atualizar capital" });
-      
     }
-  }
+  });
+
+  app.post('/api/mensagem', async (req, res) => {
+    const { nome, email, mensagem } = req.body;
+    try {
+        const novaMensagem = await prisma.mensagem.create({
+            data: {
+                nome,
+                email,
+                mensagem
+            }
+        });
+        res.status(201).json(novaMensagem);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar mensagem' });
+    }
+});
+ 
 // Middleware de Erro Global
 app.use((err, req, res, next) => {
   console.error(err.stack);
