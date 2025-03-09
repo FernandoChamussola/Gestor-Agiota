@@ -218,6 +218,43 @@ app.get('/api/dividas', authMiddleware, async (req, res) => {
     return res.status(500).json({ error: 'Erro ao listar dívidas' });
   }
 });
+app.get('/api/dividas/detalhes/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  const divida = await prisma.divida.findFirst({
+    where: {
+      id: id.toString()
+    },
+    select: {
+      id: true,
+      valorInicial: true,
+      taxaJuros: true,
+      dataEmprestimo: true,
+      dataVencimento: true,
+      status: true,
+      observacoes: true,
+      pagamentos: {
+        select: {
+          valor: true,
+          data: true
+        }
+      },
+      devedor: {
+        select: {
+          nome: true,
+          telefone: true,
+          endereco: true
+        }
+      }
+    }
+  });
+
+  if (!divida) {
+    return res.status(404).json({ error: 'Dívida não encontrada' });
+  }
+
+  return res.json(divida);
+})
 
 app.post('/api/dividas/:id/pagamento', authMiddleware, async (req, res) => {
   try {
@@ -248,13 +285,9 @@ app.post('/api/dividas/:id/pagamento', authMiddleware, async (req, res) => {
 
     // Verificar se a dívida foi quitada
     const totalPago = divida.pagamentos.reduce((total, pag) => total + pag.valor, 0) + valor;
-    const valorAtual = calculaJurosSimples(
-      divida.valorInicial,
-      divida.taxaJuros,
-      divida.dataEmprestimo
-    );
+    const valorTotalAPagar = divida.valorInicial * (1 + (divida.taxaJuros / 100));
 
-    if (totalPago >= valorAtual) {
+    if (totalPago >= valorTotalAPagar) {
       await prisma.divida.update({
         where: { id },
         data: { status: 'QUITADA' }
@@ -399,6 +432,93 @@ app.get('/api/relatorios/devedores/pdf', authMiddleware, async (req, res) => {
     return res.status(500).json({ error: 'Erro ao gerar PDF' });
   }
 });
+
+
+app.put('/api/usuarios/:id/reiniciar', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuarioId = typeof id === 'string' ? id : id.toString();
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: usuarioId }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Apagar todos os pagamentos
+    await prisma.pagamento.deleteMany({
+      where: {
+        divida: {
+          usuarioId: usuarioId
+        }
+      }
+    });
+
+    // Apagar todas as dívidas
+    await prisma.divida.deleteMany({
+      where: {
+        usuarioId: usuarioId
+      }
+    });
+
+    // Apagar todas as movimentações
+    await prisma.movimentacao.deleteMany({
+      where: {
+        usuarioId: usuarioId
+      }
+    });
+
+
+    await prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        capitalTotal: 0
+      }
+    });
+
+    res.json({ message: 'Usuário reiniciado com sucesso' });
+    console.log('Usuário reiniciado com sucesso');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao reiniciar usuário' });
+  }
+});
+
+app.put('/api/dividas/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { valorInicial, taxaJuros, dataVencimento, observacoes } = req.body;
+    const usuarioId = req.user.id;
+
+    const divida = await prisma.divida.findFirst({
+      where: {
+        id,
+        usuarioId
+      }
+    });
+
+    if (!divida) {
+      return res.status(404).json({ error: 'Dívida não encontrada' });
+    }
+
+    const updatedDivida = await prisma.divida.update({
+      where: { id },
+      data: {
+        valorInicial,
+        taxaJuros,
+        dataVencimento: new Date(dataVencimento),
+        observacoes
+      }
+    });
+
+    res.json(updatedDivida);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar dívida' });
+  }
+});
+
 
 
 // Rota para contar quantos usuários existem no sistema
