@@ -6,10 +6,12 @@ import dividaRoutas from './src/routes/dividaRoutas.js';
 import pagamentoRoutas from './src/routes/pagamentoRoutas.js';
 import dashboardRoutas from './src/routes/dashboardRoutas.js';
 import { configurarTarefasAgendadas } from './src/services/notificacao.js';
+
 const app = express();
 
-
-app.use(cors());
+app.use(cors({
+    origin: '*', // Configuração do CORS para aceitar requisições de todos os lugares
+}));
 app.use(express.json());
 
 app.get('/', (req, res) => {
