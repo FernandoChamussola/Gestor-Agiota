@@ -10,8 +10,11 @@ import { configurarTarefasAgendadas } from './src/services/notificacao.js';
 const app = express();
 
 app.use(cors({
-    origin: 'https://systemagiota.netlify.app',
+    origin: ['https://systemagiota.netlify.app', 'http://localhost:3000'], // se for testar local
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
 }));
+
 app.use(express.json());
 
 app.get('/', (req, res) => {
