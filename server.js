@@ -10,7 +10,7 @@ import { configurarTarefasAgendadas } from './src/services/notificacao.js';
 const app = express();
 
 app.use(cors({
-    origin: '*', // Configuração do CORS para aceitar requisições de todos os lugares
+    origin: 'https://systemagiota.netlify.app',
 }));
 app.use(express.json());
 
