@@ -2,7 +2,7 @@ import axios from 'axios';
 
 async function enviarMensagem({ numero, mensagem }) {
   try {
-    const { data } = await axios.post('http://localhost:5000/enviar', {
+    const { data } = await axios.post('https://mywhatssapapi.onrender.com/enviar', {
       numero,
       mensagem,
     });
